@@ -47,6 +47,7 @@ def gradient(x500, x1000, d=d, L=L):
     #tmp
     #x1000 = x1000[0]
 
+
     x500 = tf.convert_to_tensor(x500)
     x1000 = tf.convert_to_tensor(x1000)
     #d = tf.convert_to_tensor(d[1])
@@ -61,12 +62,12 @@ def gradient(x500, x1000, d=d, L=L):
     x1000 = x500
 
 
-    with tf.GradientTape() as tape1:
+    with tf.GradientTape() as tape1, tf.GradientTape() as tape2:
 
-        tape.watch(x500)
-        tape.watch(x1000)
-        tape.watch(L)
-        tape.watch(d)
+        tape1.watch(x500)
+        tape1.watch(x1000)
+        tape1.watch(L)
+        tape1.watch(d)
 
         print(f"x1000:{x1000}")
         sin = x1000 / tf.sqrt(x1000*x1000 + L*L)
@@ -84,7 +85,7 @@ def gradient(x500, x1000, d=d, L=L):
     #dsin_dx = tape.gradient(sin, x1000)
     #print(dsin_dx)
     #print(L*L / (tf.sqrt(x1000*x1000 + L*L) ** 3))
-    dlambdas_dL = tape.gradient(lambdas, L)
+    dlambdas_dL = tape1.gradient(lambdas, L)
     print(f"dlamdas / dL \n{dlambdas_dL}")
     return
 
@@ -95,11 +96,90 @@ def gradient(x500, x1000, d=d, L=L):
     print(f"dlamdas / dL \n{dlambdas_dL}")
 
 
+def gradients(x500: np.ndarray, x1000: np.ndarray, d=d, L=L):
+    print("=======gradients========")
+
+    #tmp
+    #x1000 = x1000[0]
+
+    x500 = x500.reshape(1, 3)
+    x1000 = x1000.reshape(1, 3)
+
+    print(f"x500:{x500}")
+    print(f"x1000:{x1000}")
+
+    x = np.concatenate([x500, x1000])
+    print(f"x:{x}")
+
+    x = tf.convert_to_tensor(x)
+
+    d = d.reshape((2, 1))
+    d = tf.convert_to_tensor(d)
+
+    #L = tf.convert_to_tensor(L[1])
+
+    #L = np.full(shape=(3,), fill_value=L[1])
+    L: np.ndarray = np.full(shape=(3,2), fill_value=L)
+    L = L.transpose()
+    L = tf.convert_to_tensor(L)
+    print(f"L:{L}")
+
+    with tf.GradientTape() as tape1, tf.GradientTape() as tape2:
+
+        for val in (x, d, L):
+            tape1.watch(val)
+            tape2.watch(val)
+
+        print((x*x).shape)
+        print((L*L).shape)
+        sin = x / tf.sqrt(x*x + L*L)
+
+        print(f"sin{sin}")
+
+        m = tf.constant(np.array([1, 2, 3], dtype=np.float64))
+
+        #tmp
+        #m = tf.constant(np.array([1], dtype=np.float64))
+
+        print(f"m:{m}, d;{d}")
+        print((sin / m).shape)
+        print(d.shape)
+        lambdas = d * (sin / m)
+        #lambdas = lambdas * (10 ** 9)
+        print(f"lambdas{lambdas}")
+
+    #dsin_dx = tape.gradient(sin, x1000)
+    #print(dsin_dx)
+    #print(L*L / (tf.sqrt(x1000*x1000 + L*L) ** 3))
+
+    print("==========result===========")
+
+    dlambdas_dL = tape1.gradient(lambdas, L)
+    print(f"\ndlamdas / dL \n{dlambdas_dL}")
+
+    dlambdas_dx = tape2.gradient(lambdas, x)
+    print(f"\ndlamdas / dx \n{dlambdas_dx}")
+
+    delta_by_x = dlambdas_dx * 0.05
+    delta_by_L = dlambdas_dL * 0.0005
+
+    print()
+
+    print(f"\nxの誤差:\n{delta_by_x}")
+    print(f"\nLの誤差:\n{delta_by_L}")
+
+    print()
+
+    delta = delta_by_x + delta_by_L
+    print(f"\n誤差総和:\n{delta}")
+
+    print(f"\n誤差平均:\n{tf.reduce_mean(delta)}")
+
 
 
 def main():
-    gradient(x500, x1000)
-    pass
+    gradients(x500, x1000)
+    return
 
 def get_lambda(d, x, L):
     sin = x / np.sqrt(x*x + L*L)
