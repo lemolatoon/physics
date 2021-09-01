@@ -160,7 +160,7 @@ def gradients(x500: np.ndarray, x1000: np.ndarray, d=d, L=L):
     dlambdas_dx = tape2.gradient(lambdas, x)
     print(f"\ndlamdas / dx \n{dlambdas_dx}")
 
-    delta_by_x = dlambdas_dx * 0.05
+    delta_by_x = dlambdas_dx * (0.05 * 10**(-2))
     delta_by_L = dlambdas_dL * 0.0005
 
     print()
@@ -168,12 +168,16 @@ def gradients(x500: np.ndarray, x1000: np.ndarray, d=d, L=L):
     print(f"\nxの誤差:\n{delta_by_x}")
     print(f"\nLの誤差:\n{delta_by_L}")
 
+    print(f"\nx_mean\n{tf.reduce_mean(delta_by_x, axis=1)}")
+    print(f"\nL_mean\n{tf.reduce_mean(delta_by_L, axis=1)}")
+
+
     print()
 
-    delta = delta_by_x + delta_by_L
+    delta = delta_by_x + tf.abs(delta_by_L)
     print(f"\n誤差総和:\n{delta}")
 
-    print(f"\n誤差平均:\n{tf.reduce_mean(delta)}")
+    print(f"\n誤差平均:\n{tf.reduce_mean(delta, axis=1)}")
 
 
 
